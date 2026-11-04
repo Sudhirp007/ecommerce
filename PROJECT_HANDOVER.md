@@ -14,12 +14,16 @@
 | Domain | https://morningveg.com/ |
 | GitHub repository | https://github.com/Sudhirp007/ecommerce.git |
 | Local project root | `C:\Users\DELL\Downloads\ecommerce` |
-| Current phase | **M4 — Customer Accounts & Authentication: COMPLETE & VERIFIED** |
+| Current phase | **M5 — Cart & Checkout Architecture: COMPLETE & VERIFIED** |
 | Primary goal | PoC + controlled pilot, then migrate to managed production hosting |
 
 ---
 
 ## 2. Current Status Summary
+
+> **🔒 Git Push Governance (Owner-approved rule):** The coding agent MUST commit locally but **MUST NOT push to GitHub/origin until CODVIAN (PM) has given explicit signoff** on the milestone. Pushing to the remote repository happens ONLY after PM signoff. This keeps the remote history review-gated.
+
+> **✔ Product-Owner Sign-offs:** M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · **M5 (completed & verified locally, awaiting PM review)** — ready for M6.
 
 - **M0 (Discovery & feasibility): COMPLETE / APPROVED.**
 - **M1 (Architecture & Foundation): COMPLETE / VERIFIED:**
@@ -58,7 +62,18 @@
   - Frontend auth UI: `LoginPage` (with React `Suspense`), `RegisterPage`, customer dashboard `AccountPage`, and address manager `AddressesPage`.
   - Global `AuthContext.tsx` synchronized with `Header.tsx` displaying user badge, profile link, and sign-out action.
   - Integration test suite `scripts/test-auth-api.js` verified 7/7 test cases end-to-end against live production server and Neon PostgreSQL.
-- **Next milestone: M5 — Cart & Checkout Architecture** (Server-side price recalculation, cart persistence in Neon DB for logged-in users, out-of-stock validation, checkout form).
+- **M5 (Cart & Checkout Architecture): COMPLETE / VERIFIED:**
+  - Server-Side Pricing & Cart Calculation Engine (`src/lib/checkout.ts`): Strictly enforces Zero Client Trust by recalculating unit prices and subtotals directly from Neon PostgreSQL, discarding all client-submitted totals or prices.
+  - Free Shipping & Fee Policy: Orders $\ge$ ₹999 qualify for ₹0 free shipping; orders under ₹999 automatically incur a ₹99 flat delivery fee.
+  - Real-time Stock Validation: Live checks prevent placing orders for out-of-stock items or quantities exceeding warehouse inventory.
+  - Cart Validation REST API (`POST /api/cart/validate`): Returns verified variant items, stock sufficiency flags, line subtotals, and authoritative order grand total.
+  - Order Creation API (`POST /api/orders`): Validates address with Zod, writes `Order` and sequential `OrderItem` records with immutable purchase snapshots (`productName`, `sku`, `size`, `color`, `unitPrice`, `quantity`, `subtotal`), provisions pending `Payment` record, and clears user database cart.
+  - Order Lookup API (`GET /api/orders/[orderNumber]`): Returns verified order details and immutable snapshot records.
+  - Checkout User Interface (`src/app/checkout/page.tsx`): 3-step checkout with saved address picker for logged-in users, guest address form, live server pricing validation breakdown, payment method selector (UPI Apps, Dynamic UPI QR, Card, NetBanking), order notes, and Razorpay Sandbox test banner.
+  - Order Confirmation Page (`src/app/order-success/[orderNumber]/page.tsx`): Displays order number, dispatch estimate, delivery address, purchased items snapshot, and account navigation.
+  - Cart Drawer Integration: "Proceed to Checkout" button dynamically navigates to `/checkout` and closes drawer.
+  - Automated Integration Test Suite (`scripts/test-checkout-api.js`): 6/6 test cases passed (Zero Client Trust price tampering rejection, shipping fee calculation, free shipping qualification, out-of-stock blocking, order generation, and immutable snapshot verification).
+- **Next milestone: M6 — Payment Gateway Integration (Razorpay Test Mode)** (Razorpay SDK, UPI Intent, Dynamic QR, NetBanking, signature & webhook verification, idempotent payment settlement).
 
 ---
 
@@ -282,8 +297,8 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 | M2 | Database design (Prisma schema, 48 variants, seed script) | ✅ Complete |
 | M3 | Storefront (home, catalog, product pages, search/filter/sort) | ✅ Complete |
 | M4 | Customer accounts (register/login/session/profile/addresses) | ✅ Complete |
-| M5 | Cart & checkout (server-side price/stock validation) | 🔲 Next |
-| M6 | Payments (Razorpay test mode, webhooks, refunds) | 🔲 Planned |
+| M5 | Cart & checkout (server-side price/stock validation) | ✅ Complete |
+| M6 | Payments (Razorpay test mode, webhooks, refunds) | 🔲 Next |
 | M7 | Admin dashboard (products, categories, variants, inventory, orders, customers) | 🔲 Planned |
 | M8 | Order lifecycle (status transitions, tracking, cancellation) | 🔲 Planned |
 | M9 | QA (unit/integration/E2E, security, load) | 🔲 Planned |
@@ -380,12 +395,23 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 9. ✅ Re-seeded test users (`customer@morningveg.com` / `Password123!`) with verified bcrypt hashes.
 10. ✅ Created and executed automated test script `scripts/test-auth-api.js` verifying all 7 test cases end-to-end against live server.
 
-### Next Actions: M5 — Cart & Checkout Architecture (Ready to Begin)
-- Server-side cart synchronization with Neon PostgreSQL (`Cart` and `CartItem` models).
-- Strict server-side price recalculation (Zero Client Trust principle).
-- Stock availability and variant lock checks before checkout.
-- Multi-step checkout UI (Delivery Address Selection, Order Summary, Payment Method Selection).
-- Address pre-filling from saved customer addresses.
+### Completed in M5 (Verified):
+1. ✅ Implemented server-side price recalculation & stock validation engine (`src/lib/checkout.ts`) enforcing Zero Client Trust.
+2. ✅ Enforced free shipping threshold: orders $\ge$ ₹999 get ₹0 shipping; orders under ₹999 incur ₹99 standard shipping.
+3. ✅ Implemented cart validation API (`POST /api/cart/validate`).
+4. ✅ Implemented order creation API (`POST /api/orders`) with sequential HTTP-safe writes and immutable snapshot storage (`OrderItem`).
+5. ✅ Implemented order lookup API (`GET /api/orders/[orderNumber]`).
+6. ✅ Built checkout interface (`src/app/checkout/page.tsx`) with saved address selector, guest address form, real-time server recalculation, payment method selection, and order submission.
+7. ✅ Built order confirmation page (`src/app/order-success/[orderNumber]/page.tsx`).
+8. ✅ Updated `CartDrawer.tsx` to route directly into `/checkout`.
+9. ✅ Developed and executed automated test script `scripts/test-checkout-api.js` verifying all 6 test cases end-to-end.
+
+### Next Actions: M6 — Payment Gateway Integration (Razorpay Test Mode)
+- Install Razorpay SDK (`razorpay`).
+- Configure Razorpay Test Mode credentials (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`).
+- Create Razorpay order creation endpoint (`POST /api/payments/razorpay/order`).
+- Integrate Razorpay Standard Checkout frontend modal with UPI Intent, Dynamic QR, NetBanking, and Card options.
+- Build server-side signature verification & webhook handler (`POST /api/payments/razorpay/webhook`) with idempotent payment settlement.
 
 ---
 

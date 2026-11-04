@@ -2,10 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 
 export function CartDrawer() {
+  const router = useRouter();
   const {
     items,
     isCartOpen,
@@ -192,7 +194,8 @@ export function CartDrawer() {
               <button
                 type="button"
                 onClick={() => {
-                  alert("Checkout integration scheduled for Milestone 5 (Razorpay payments).");
+                  closeCart();
+                  router.push("/checkout");
                 }}
                 className="w-full py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
               >

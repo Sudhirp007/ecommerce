@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Successfully synced schema to Neon PostgreSQL via `npx prisma db push`.
   - Developed and executed realistic seed script (`prisma/seed.ts`): seeded 5 apparel categories, 10 products, 48 size/color variants with individual inventory logs, sample customer, and sample order.
   - Built typed catalog query library `src/lib/catalog.ts` and REST endpoint `/api/catalog/products`.
+- **Milestone 5: Cart & Checkout Architecture Completed**
+  - Built server-side cart recalculation engine `src/lib/checkout.ts` strictly enforcing Zero Client Trust by querying authoritative prices and stock from Neon PostgreSQL.
+  - Implemented automatic shipping rules: free express delivery above ₹999; flat ₹99 below threshold.
+  - Developed cart validation API `POST /api/cart/validate` with live stock verification and error reporting.
+  - Developed order creation API `POST /api/orders` generating unique sequential order numbers (`MV-YYYY-XXXX`), writing `Order` and `OrderItem` records with immutable purchase snapshots, and provisioning pending `Payment` records.
+  - Developed order lookup endpoint `GET /api/orders/[orderNumber]`.
+  - Created interactive Checkout page `src/app/checkout/page.tsx` with saved address picker, guest shipping form, live pricing breakdown, payment method selectors (UPI Intent, Dynamic UPI QR, Card, NetBanking), and order placement.
+  - Created order confirmation page `src/app/order-success/[orderNumber]/page.tsx` displaying order summary, immutable price snapshots, and dispatch timeline.
+  - Updated `CartDrawer.tsx` to transition smoothly into the checkout flow.
+  - Developed and verified automated test script `scripts/test-checkout-api.js` testing 6 end-to-end checkout scenarios.
 - **Milestone 4: Customer Accounts & Authentication Completed**
   - Integrated pure JS `bcryptjs` and `jose` for zero-native-addon portability on Windows, Linux, and Android Termux Bionic libc.
   - Implemented stateless session architecture in `src/lib/auth.ts` with HTTP-only 7-day `auth-token` cookies.
