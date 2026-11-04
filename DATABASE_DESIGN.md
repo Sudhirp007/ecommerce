@@ -2,7 +2,7 @@
 
 **Engine:** PostgreSQL 18.6 (Neon Serverless Lakebase)  
 **ORM:** Prisma 7.10 + `@prisma/adapter-neon`  
-**Current State:** Initial foundational schema created and synced. Full M2 design pending milestone entry.
+**Current State:** Milestone 2 Complete. Full relational schema pushed to Neon PostgreSQL and seeded with 10 products, 48 variants, and verified sample transactions.
 
 ---
 

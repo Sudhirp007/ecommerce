@@ -16,7 +16,7 @@ async function testPrisma() {
     console.log("--- TESTING PRISMA + @prisma/adapter-neon (HTTP) ---");
 
     // 1. Raw query test via Prisma
-    const [raw] = await prisma.$queryRaw`SELECT version(), current_database(), now() AS server_time`;
+    const [raw] = await prisma.$queryRaw`SELECT version(), current_database()::text, now() AS server_time`;
     console.log("Raw query via Prisma:", {
       database: raw.current_database,
       version: raw.version.split(" ")[0] + " " + raw.version.split(" ")[1],

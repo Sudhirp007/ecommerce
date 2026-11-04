@@ -14,7 +14,7 @@
 | Domain | https://morningveg.com/ |
 | GitHub repository | https://github.com/Sudhirp007/ecommerce.git |
 | Local project root | `C:\Users\DELL\Downloads\ecommerce` |
-| Current phase | **M1 — Architecture, Scaffolding & Neon Database: COMPLETE & VERIFIED** |
+| Current phase | **M2 — Apparel Data Modeling & Schema: COMPLETE & VERIFIED** |
 | Primary goal | PoC + controlled pilot, then migrate to managed production hosting |
 
 ---
@@ -31,7 +31,12 @@
   - Android Device (Realme Narzo / Termux) successfully bridged via SSH (`u0_a317@192.168.1.14:8022`) with passwordless key authentication.
   - Git initialized with `main` branch and linked to remote `https://github.com/Sudhirp007/ecommerce.git`.
   - Sensitive files (`.env`, `.env.local`, `.neon`) safely excluded via `.gitignore`.
-- **Next milestone: M2 — Database Design & Schema Modeling** (Prisma / relational schema for categories, products, apparel variants, inventory).
+- **M2 (Database Design & Apparel Schema): COMPLETE / VERIFIED:**
+  - Complete relational schema pushed to Neon PostgreSQL: `categories`, `products`, `product_images`, `product_variants`, `inventory_logs`, `users`, `addresses`, `carts`, `cart_items`, `orders`, `order_items`, `payments`.
+  - Realistic apparel catalog seed script (`prisma/seed.ts`) executed: 5 categories, 10 products, 48 unique size/color variants with individual SKUs and stock, sample users, cart, and verified order.
+  - Type-safe catalog domain service (`src/lib/catalog.ts`) and REST API (`/api/catalog/products`) implemented.
+  - Storefront homepage (`src/app/page.tsx`) updated to render live catalog data directly from Neon PostgreSQL.
+- **Next milestone: M3 — Storefront & Catalog Browsing** (Filtering, search, category pages, product detail pages with size/color pickers, cart drawer).
 
 ---
 
@@ -252,8 +257,8 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 |---|---|---|
 | M0 | Discovery & feasibility | ✅ Approved |
 | M1 | Architecture + project foundation (scaffold, git, docs, env, Neon DB) | ✅ Complete |
-| M2 | Database design (Prisma schema, migrations) | 🔲 Planned |
-| M3 | Storefront (home, catalog, product pages, search/filter/sort) | 🔲 Planned |
+| M2 | Database design (Prisma schema, 48 variants, seed script) | ✅ Complete |
+| M3 | Storefront (home, catalog, product pages, search/filter/sort) | 🔲 Next |
 | M4 | Customer accounts (register/login/session/profile/addresses) | 🔲 Planned |
 | M5 | Cart & checkout (server-side price/stock validation) | 🔲 Planned |
 | M6 | Payments (Razorpay test mode, webhooks, refunds) | 🔲 Planned |
