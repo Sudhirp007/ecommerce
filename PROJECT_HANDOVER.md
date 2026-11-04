@@ -312,25 +312,24 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 
 ---
 
-## 12. A Next Actions
+## 12. Milestone Status & Next Actions
 
-### For CODVIAN (PM/Architect)
-- Prepare detailed **M1 — Project Initialization** instructions for Gemini: scaffold Next.js (TypeScript, Tailwind, App Router, ESLint), Prisma init, git init, `.env`/`.env.example`, `.gitignore`, core docs, README.
-- Draft the M1 acceptance criteria and evidence requirements.
+### Completed in M1 (Verified):
+1. ✅ Handover read and synchronized.
+2. ✅ Inspected GitHub repo and initialized local Git repository on `main`.
+3. ✅ Scaffolded Next.js 16 (App Router) with TypeScript and Tailwind CSS v4 in `C:\Users\DELL\Downloads\ecommerce`.
+4. ✅ Core dependencies installed (`prisma`, `@prisma/client`, `@prisma/adapter-neon`, `zod`, `tailwindcss`).
+5. ✅ Initial commit created and pushed to GitHub remote (`git@github.com:Sudhirp007/ecommerce.git`).
+6. ✅ Environment templates created (`.env.example`, local `.env.local` and `.env` secured by `.gitignore`).
+7. ✅ Core project documentation suite created (`README.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `DATABASE_DESIGN.md`, `CHANGELOG.md`, `GEMINI.md`).
+8. ✅ Production build (`npm run build`) and live endpoint (`/api/health`) verified with actual output.
+9. ✅ Handover updated with complete architecture examples.
 
-### For implementation agent (Gemini Antigravity) — M1 (pending M1 approval)
-1. Read this handover first.
-2. Inspect the actual GitHub repo state (`git status`, `ls`) before making any recommendation — do not assume it is empty.
-3. Scaffold the Next.js app in `C:\Users\DELL\Downloads\ecommerce`.
-4. Install core dependencies (prisma, @prisma/client, auth.js, zod, tailwind).
-5. Initialize git, create initial commit, push to the GitHub remote.
-6. Create `.env` (secrets only here, git-ignored) + `.env.example`.
-7. Create `README.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `DATABASE_DESIGN.md` (skeleton), `CHANGELOG.md`.
-8. Report: files created/modified, commands run, output, commits, limitations.
-9. Update this handover after finishing.
-
-### Pending owner decision before M1
-- Approval to start **M1 — Project initialization** (the gate the previous M0 approval does not yet open).
+### Next Actions: M2 — Database Design & Schema Modeling (Awaiting Approval)
+- Define full apparel models in `prisma/schema.prisma` (Categories, Products, Images, Color/Size Variants, SKU, Inventory tracking).
+- Write database seed script (`prisma/seed.ts`) populating initial apparel catalog.
+- Execute migration and verify relation integrity in Neon PostgreSQL.
+- Report M2 deliverables to CODVIAN for review.
 
 ---
 
