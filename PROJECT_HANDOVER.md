@@ -14,7 +14,7 @@
 | Domain | https://morningveg.com/ |
 | GitHub repository | https://github.com/Sudhirp007/ecommerce.git |
 | Local project root | `C:\Users\DELL\Downloads\ecommerce` |
-| Current phase | **M2 — Apparel Data Modeling & Schema: COMPLETE & VERIFIED** |
+| Current phase | **M3 — Storefront & Catalog Browsing: COMPLETE & VERIFIED** |
 | Primary goal | PoC + controlled pilot, then migrate to managed production hosting |
 
 ---
@@ -36,7 +36,18 @@
   - Realistic apparel catalog seed script (`prisma/seed.ts`) executed: 5 categories, 10 products, 48 unique size/color variants with individual SKUs and stock, sample users, cart, and verified order.
   - Type-safe catalog domain service (`src/lib/catalog.ts`) and REST API (`/api/catalog/products`) implemented.
   - Storefront homepage (`src/app/page.tsx`) updated to render live catalog data directly from Neon PostgreSQL.
-- **Next milestone: M3 — Storefront & Catalog Browsing** (Filtering, search, category pages, product detail pages with size/color pickers, cart drawer).
+- **M3 (Storefront & Catalog Browsing): COMPLETE / VERIFIED:**
+  - Client-side Cart state and localStorage persistence implemented in `src/context/CartContext.tsx` with dynamic item counters, subtotal, and ₹999 free-shipping progress tracker.
+  - Slide-over `CartDrawer.tsx` component with live quantity adjustments (+/-), item removal, and subtotal calculation.
+  - Responsive `Header.tsx` with brand logo, category navigation, real-time search form, and bag badge counter.
+  - Reusable `ProductCard.tsx` with color swatches, size badges, discount pill, low-stock warning, and direct PDP links.
+  - Interactive PDP client component `ProductDetailClient.tsx` featuring dynamic color swatch selection, dynamic size buttons disabled on out-of-stock variants, interactive Size Chart measurement modal (Inches/CM), quantity counter, and Add to Bag with automatic drawer slide-out.
+  - Dynamic PDP route `src/app/product/[slug]/page.tsx` with server-rendered SEO metadata, schema tags, and product lookups.
+  - Dynamic category browsing route `src/app/category/[slug]/page.tsx` with size query filtering (`?size=M`), price sorting (`?sort=price-low` / `?sort=price-high`), and breadcrumb navigation.
+  - Keyword search page `src/app/search/page.tsx` querying live products and variants matching search queries.
+  - `npm run build` executed successfully (7.7s compilation, zero TypeScript errors).
+  - Production server (`next start`) executed and all endpoints verified live (`/api/health`, `/category/t-shirts`, `/category/t-shirts?size=M&sort=price-low`, `/product/organic-heavyweight-classic-crew-tee`, `/search?q=linen`, `/`).
+- **Next milestone: M4 — Customer Accounts & Authentication** (Credentials auth, session management, user profile, address book, role-based guardrails).
 
 ---
 
@@ -258,8 +269,8 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 | M0 | Discovery & feasibility | ✅ Approved |
 | M1 | Architecture + project foundation (scaffold, git, docs, env, Neon DB) | ✅ Complete |
 | M2 | Database design (Prisma schema, 48 variants, seed script) | ✅ Complete |
-| M3 | Storefront (home, catalog, product pages, search/filter/sort) | 🔲 Next |
-| M4 | Customer accounts (register/login/session/profile/addresses) | 🔲 Planned |
+| M3 | Storefront (home, catalog, product pages, search/filter/sort) | ✅ Complete |
+| M4 | Customer accounts (register/login/session/profile/addresses) | 🔲 Next |
 | M5 | Cart & checkout (server-side price/stock validation) | 🔲 Planned |
 | M6 | Payments (Razorpay test mode, webhooks, refunds) | 🔲 Planned |
 | M7 | Admin dashboard (products, categories, variants, inventory, orders, customers) | 🔲 Planned |
@@ -330,11 +341,28 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 8. ✅ Production build (`npm run build`) and live endpoint (`/api/health`) verified with actual output.
 9. ✅ Handover updated with complete architecture examples.
 
-### Next Actions: M2 — Database Design & Schema Modeling (Awaiting Approval)
-- Define full apparel models in `prisma/schema.prisma` (Categories, Products, Images, Color/Size Variants, SKU, Inventory tracking).
-- Write database seed script (`prisma/seed.ts`) populating initial apparel catalog.
-- Execute migration and verify relation integrity in Neon PostgreSQL.
-- Report M2 deliverables to CODVIAN for review.
+### Completed in M2 (Verified):
+1. ✅ Complete relational apparel schema pushed to Neon PostgreSQL (12 models).
+2. ✅ Seed script (`prisma/seed.ts`) populating 5 categories, 10 products, 48 variants with unique SKUs, stock levels, and audit logs.
+3. ✅ Catalog query service (`src/lib/catalog.ts`) and `/api/catalog/products` endpoint verified.
+
+### Completed in M3 (Verified):
+1. ✅ Installed `lucide-react` for clean apparel UI icons.
+2. ✅ Implemented `CartContext.tsx` with localStorage persistence and free shipping threshold meter.
+3. ✅ Implemented slide-out `CartDrawer.tsx` with dynamic quantity updates and item removal.
+4. ✅ Implemented global responsive `Header.tsx` with search input and live bag badge.
+5. ✅ Created reusable `ProductCard.tsx` with color swatches, size availability, discount badge, and stock alerts.
+6. ✅ Built interactive PDP `ProductDetailClient.tsx` with color swatch switcher, stock-aware size selector, interactive Size Guide modal, and Add to Bag.
+7. ✅ Built dynamic server routes: `/product/[slug]`, `/category/[slug]` (with filter/sort queries), `/search?q=...`.
+8. ✅ Verified `npm run build` compilation (Turbopack, TypeScript checks, zero errors).
+9. ✅ Verified production runtime via `curl` against all M3 routes with HTTP 200 responses.
+
+### Next Actions: M4 — Customer Accounts & Authentication (Ready to Begin)
+- Configure lightweight authentication (Credentials / Password hashing with bcrypt).
+- User registration and login pages (`/login`, `/register`).
+- Secure JWT / Session management.
+- User profile and address book management (`/account`, `/account/addresses`).
+- Server-side route protection & role guard middleware (`CUSTOMER` vs `ADMIN`).
 
 ---
 

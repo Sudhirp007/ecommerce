@@ -15,6 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Audited target staging device: Realme Narzo (Android 14, aarch64, 89 GB available storage).
   - Established passwordless SSH bridge to Android Termux on port 8022.
   - Audited domain `morningveg.com` (currently on Hostinger; approved to be replaced via Cloudflare Tunnel).
+- **Milestone 2: Apparel Data Modeling & Seed Completed**
+  - Expanded `prisma/schema.prisma` with 12 apparel and commerce entities: `Category`, `Product`, `ProductImage`, `ProductVariant`, `InventoryLog`, `User`, `Address`, `Cart`, `CartItem`, `Order`, `OrderItem`, and `Payment`.
+  - Added unique SKU constraints, size/color variant combinations, stock thresholds, and purchase price snapshots.
+  - Successfully synced schema to Neon PostgreSQL via `npx prisma db push`.
+  - Developed and executed realistic seed script (`prisma/seed.ts`): seeded 5 apparel categories, 10 products, 48 size/color variants with individual inventory logs, sample customer, and sample order.
+  - Built typed catalog query library `src/lib/catalog.ts` and REST endpoint `/api/catalog/products`.
+- **Milestone 3: Storefront & Catalog Browsing Completed**
+  - Installed `lucide-react` for modern e-commerce iconography.
+  - Built `CartContext.tsx` providing client-side shopping bag state, localStorage persistence, and ₹999 free delivery threshold meter.
+  - Built slide-out `CartDrawer.tsx` allowing instant quantity updates (+/-), item removal, and subtotal calculation.
+  - Built responsive `Header.tsx` featuring brand typography, navigation links, instant search input, and dynamic cart badge.
+  - Created `ProductCard.tsx` showcasing images, pricing, discount percentage, color swatches, size availability, and low-stock alerts.
+  - Created interactive PDP component `ProductDetailClient.tsx` featuring dynamic color selector, stock-dependent size selection, interactive Size Chart modal, quantity counter, and Add to Bag with drawer trigger.
+  - Built dynamic product route `src/app/product/[slug]/page.tsx` with server-rendered metadata and structured product data.
+  - Built category route `src/app/category/[slug]/page.tsx` with size query filtering (`?size=M`) and price sorting (`?sort=price-low` / `?sort=price-high`).
+  - Built search route `src/app/search/page.tsx` with live query matching.
+  - Verified `npm run build` compilation (Turbopack, TypeScript checks, zero errors).
+  - Verified production server runtime with curl requests returning HTTP 200 across all catalog and PDP endpoints.
 - **Milestone 1: Project Foundation & Database Architecture Completed**
   - Initialized Git repository on `main` branch, linked to `git@github.com:Sudhirp007/ecommerce.git`.
   - Installed and configured Next.js 16 (App Router), TypeScript, Tailwind CSS v4.
