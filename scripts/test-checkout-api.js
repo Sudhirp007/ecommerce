@@ -2,13 +2,18 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-import { PrismaNeonHttp } from "@prisma/adapter-neon";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
+import { neonConfig } from "@neondatabase/serverless";
+
+if (typeof globalThis.WebSocket !== "undefined") {
+  neonConfig.webSocketConstructor = globalThis.WebSocket;
+}
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL missing");
 
-const adapter = new PrismaNeonHttp(databaseUrl, {});
+const adapter = new PrismaNeon({ connectionString: databaseUrl });
 const prisma = new PrismaClient({ adapter });
 
 async function runCheckoutTests() {
@@ -156,6 +161,28 @@ async function runCheckoutTests() {
     throw new Error("Immutable purchase snapshot was not properly stored");
   }
   console.log("✅ Immutable purchase snapshot verified in database!");
+
+  // [Test 7] Verify Atomic Inventory Deduction & Audit Log
+  console.log(`\n[Test 7] Atomic Inventory & Audit Log Verification`);
+  const updatedTee = await prisma.productVariant.findUnique({ where: { id: teeVariant.id } });
+  console.log(`Initial Tee Stock: ${teeVariant.stock}, Current Stock: ${updatedTee?.stock} (Expected: ${teeVariant.stock - 1})`);
+  if (!updatedTee || updatedTee.stock !== teeVariant.stock - 1) {
+    throw new Error("Atomic stock deduction failed!");
+  }
+  const inventoryLog = await prisma.inventoryLog.findFirst({
+    where: { variantId: teeVariant.id, reason: "ORDER_PURCHASE" },
+    orderBy: { createdAt: "desc" },
+  });
+  console.log(`Inventory Log Entry:`, {
+    variantId: inventoryLog?.variantId,
+    quantity: inventoryLog?.quantity,
+    reason: inventoryLog?.reason,
+    referenceId: inventoryLog?.referenceId,
+  });
+  if (!inventoryLog || inventoryLog.quantity !== -1) {
+    throw new Error("Inventory audit log entry missing or quantity invalid!");
+  }
+  console.log("✅ Atomic stock decrement and InventoryLog audit record verified!");
 
   console.log("\n🎉 ALL MILESTONE 5 CART & CHECKOUT INTEGRATION TESTS PASSED CLEANLY!\n");
 }

@@ -58,72 +58,108 @@ export async function POST(req: Request) {
       );
     }
 
-    // Generate unique order number
+    // Generate unique order number prefix
     const count = await prisma.order.count();
     const year = new Date().getFullYear();
     const orderNumber = `MV-${year}-${String(count + 1).padStart(4, "0")}`;
 
-    // Create Order record (Sequential write for PrismaNeonHttp compatibility)
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        userId,
-        status: "PENDING",
-        paymentStatus: "PENDING",
-        subtotal: calculation.subtotal,
-        discountTotal: calculation.discountTotal,
-        shippingFee: calculation.shippingFee,
-        grandTotal: calculation.grandTotal,
-        shippingAddress: shippingAddress as object,
-        notes: notes || null,
-      },
-    });
+    // Execute atomic interactive transaction: Order, Items, Inventory deduction, Audit Logs, and Payment
+    const createdOrder = await prisma.$transaction(async (tx) => {
+      // 1. Re-validate & decrement stock atomically within the transaction lock
+      for (const item of calculation.items) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { id: true, stock: true, sku: true },
+        });
 
-    // Create OrderItem records with immutable purchase snapshots
-    for (const item of calculation.items) {
-      await prisma.orderItem.create({
+        if (!variant || variant.stock < item.quantity) {
+          throw new Error(
+            `Insufficient stock for SKU ${item.sku}. Requested: ${item.quantity}, available: ${variant?.stock ?? 0}.`
+          );
+        }
+
+        // Deduct inventory
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { stock: { decrement: item.quantity } },
+        });
+      }
+
+      // 2. Create Order record
+      const order = await tx.order.create({
         data: {
-          orderId: order.id,
-          variantId: item.variantId,
-          productName: item.productName,
-          sku: item.sku,
-          size: item.size,
-          color: item.colorName,
-          unitPrice: item.unitPrice,
-          quantity: item.quantity,
-          subtotal: item.lineSubtotal,
+          orderNumber,
+          userId,
+          status: "PENDING",
+          paymentStatus: "PENDING",
+          subtotal: calculation.subtotal,
+          discountTotal: calculation.discountTotal,
+          shippingFee: calculation.shippingFee,
+          grandTotal: calculation.grandTotal,
+          shippingAddress: shippingAddress as object,
+          notes: notes || null,
         },
       });
-    }
 
-    // Create pending payment record
-    await prisma.payment.create({
-      data: {
-        orderId: order.id,
-        method: paymentMethod,
-        amount: calculation.grandTotal,
-        status: "PENDING",
-      },
-    });
+      // 3. Create OrderItem records with immutable purchase snapshots and inventory audit logs
+      for (const item of calculation.items) {
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            variantId: item.variantId,
+            productName: item.productName,
+            sku: item.sku,
+            size: item.size,
+            color: item.colorName,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            subtotal: item.lineSubtotal,
+          },
+        });
 
-    // If user has a database cart, clear it
-    if (userId) {
-      const userCart = await prisma.cart.findUnique({ where: { userId } });
-      if (userCart) {
-        await prisma.cartItem.deleteMany({ where: { cartId: userCart.id } });
+        // Audit inventory reduction
+        await tx.inventoryLog.create({
+          data: {
+            variantId: item.variantId,
+            quantity: -item.quantity,
+            reason: "ORDER_PURCHASE",
+            referenceId: order.id,
+            notes: `Inventory deducted for Order ${order.orderNumber}`,
+          },
+        });
       }
-    }
+
+      // 4. Create pending payment record
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          method: paymentMethod,
+          amount: calculation.grandTotal,
+          status: "PENDING",
+        },
+      });
+
+      // 5. If user has a database cart, clear it
+      if (userId) {
+        const userCart = await tx.cart.findUnique({ where: { userId } });
+        if (userCart) {
+          await tx.cartItem.deleteMany({ where: { cartId: userCart.id } });
+        }
+      }
+
+      return order;
+    });
 
     return NextResponse.json(
       {
         success: true,
         order: {
-          id: order.id,
-          orderNumber: order.orderNumber,
+          id: createdOrder.id,
+          orderNumber: createdOrder.orderNumber,
           grandTotal: calculation.grandTotal,
           subtotal: calculation.subtotal,
           shippingFee: calculation.shippingFee,
-          status: order.status,
+          status: createdOrder.status,
           itemCount: calculation.itemCount,
           shippingAddress,
         },

@@ -3,8 +3,15 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "@/lib/db";
 
-const JWT_SECRET = process.env.JWT_SECRET || "morningveg-apparel-dev-jwt-secret-key-32-chars-long";
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.trim().length < 32) {
+    throw new Error(
+      "CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET environment variable is missing or shorter than 32 characters. Set JWT_SECRET in .env or .env.local."
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export interface TokenPayload {
   userId: string;
@@ -33,6 +40,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * Sign a stateless JSON Web Token for customer/admin sessions.
  */
 export async function signToken(payload: TokenPayload): Promise<string> {
+  const secretKey = getJwtSecretKey();
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -45,6 +53,7 @@ export async function signToken(payload: TokenPayload): Promise<string> {
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
+    const secretKey = getJwtSecretKey();
     const { payload } = await jwtVerify(token, secretKey);
     return payload as unknown as TokenPayload;
   } catch {

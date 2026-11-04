@@ -2,8 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET || "morningveg-apparel-dev-jwt-secret-key-32-chars-long";
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+function getMiddlewareSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.trim().length < 32) {
+    throw new Error(
+      "CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET environment variable is missing or shorter than 32 characters."
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,6 +31,7 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
+    const secretKey = getMiddlewareSecretKey();
     const { payload } = await jwtVerify(token, secretKey);
 
     // Guard admin routes

@@ -67,12 +67,13 @@
   - Free Shipping & Fee Policy: Orders $\ge$ ₹999 qualify for ₹0 free shipping; orders under ₹999 automatically incur a ₹99 flat delivery fee.
   - Real-time Stock Validation: Live checks prevent placing orders for out-of-stock items or quantities exceeding warehouse inventory.
   - Cart Validation REST API (`POST /api/cart/validate`): Returns verified variant items, stock sufficiency flags, line subtotals, and authoritative order grand total.
-  - Order Creation API (`POST /api/orders`): Validates address with Zod, writes `Order` and sequential `OrderItem` records with immutable purchase snapshots (`productName`, `sku`, `size`, `color`, `unitPrice`, `quantity`, `subtotal`), provisions pending `Payment` record, and clears user database cart.
+  - Order Creation API (`POST /api/orders`): Validates address with Zod, executes an atomic `prisma.$transaction` creating `Order` and `OrderItem` records with immutable purchase snapshots, deducting variant stock atomically, generating `InventoryLog` records, provisioning pending `Payment` record, and clearing user database cart. Guaranteed rollback on any failure.
   - Order Lookup API (`GET /api/orders/[orderNumber]`): Returns verified order details and immutable snapshot records.
   - Checkout User Interface (`src/app/checkout/page.tsx`): 3-step checkout with saved address picker for logged-in users, guest address form, live server pricing validation breakdown, payment method selector (UPI Apps, Dynamic UPI QR, Card, NetBanking), order notes, and Razorpay Sandbox test banner.
   - Order Confirmation Page (`src/app/order-success/[orderNumber]/page.tsx`): Displays order number, dispatch estimate, delivery address, purchased items snapshot, and account navigation.
   - Cart Drawer Integration: "Proceed to Checkout" button dynamically navigates to `/checkout` and closes drawer.
-  - Automated Integration Test Suite (`scripts/test-checkout-api.js`): 6/6 test cases passed (Zero Client Trust price tampering rejection, shipping fee calculation, free shipping qualification, out-of-stock blocking, order generation, and immutable snapshot verification).
+  - Security hardening: Hardcoded fallback JWT secrets completely removed from `src/lib/auth.ts` and `src/middleware.ts`; explicit `JWT_SECRET` (min 32 chars) strictly enforced.
+  - Automated Integration Test Suite (`scripts/test-checkout-api.js`): 7/7 test cases passed (Zero Client Trust price tampering rejection, shipping fee calculation, free shipping qualification, out-of-stock blocking, order generation, immutable snapshot verification, and atomic stock deduction + InventoryLog entry).
 - **Next milestone: M6 — Payment Gateway Integration (Razorpay Test Mode)** (Razorpay SDK, UPI Intent, Dynamic QR, NetBanking, signature & webhook verification, idempotent payment settlement).
 
 ---
@@ -399,12 +400,14 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 1. ✅ Implemented server-side price recalculation & stock validation engine (`src/lib/checkout.ts`) enforcing Zero Client Trust.
 2. ✅ Enforced free shipping threshold: orders $\ge$ ₹999 get ₹0 shipping; orders under ₹999 incur ₹99 standard shipping.
 3. ✅ Implemented cart validation API (`POST /api/cart/validate`).
-4. ✅ Implemented order creation API (`POST /api/orders`) with sequential HTTP-safe writes and immutable snapshot storage (`OrderItem`).
-5. ✅ Implemented order lookup API (`GET /api/orders/[orderNumber]`).
-6. ✅ Built checkout interface (`src/app/checkout/page.tsx`) with saved address selector, guest address form, real-time server recalculation, payment method selection, and order submission.
-7. ✅ Built order confirmation page (`src/app/order-success/[orderNumber]/page.tsx`).
-8. ✅ Updated `CartDrawer.tsx` to route directly into `/checkout`.
-9. ✅ Developed and executed automated test script `scripts/test-checkout-api.js` verifying all 6 test cases end-to-end.
+4. ✅ Upgraded database adapter to `PrismaNeon` with native WebSocket constructor in `src/lib/db.ts`, enabling full interactive transactions (`prisma.$transaction`) with zero native C++ binaries.
+5. ✅ Enforced atomic order placement in `POST /api/orders`: Order creation, OrderItem immutable purchase snapshots, variant stock deduction, InventoryLog audit records, and pending Payment records execute inside a single atomic `prisma.$transaction`. Rollback guaranteed on any failure.
+6. ✅ Eliminated hardcoded JWT fallback secret in `src/lib/auth.ts` and `src/middleware.ts`: enforces explicit `JWT_SECRET` environment variable with minimum 32 characters, throwing configuration error if absent.
+7. ✅ Implemented order lookup API (`GET /api/orders/[orderNumber]`).
+8. ✅ Built checkout interface (`src/app/checkout/page.tsx`) with saved address selector, guest address form, real-time server recalculation, payment method selection, and order submission.
+9. ✅ Built order confirmation page (`src/app/order-success/[orderNumber]/page.tsx`).
+10. ✅ Updated `CartDrawer.tsx` to route directly into `/checkout`.
+11. ✅ Developed and executed automated test script `scripts/test-checkout-api.js` verifying 7/7 test cases end-to-end, including atomic stock deduction and InventoryLog verification.
 
 ### Next Actions: M6 — Payment Gateway Integration (Razorpay Test Mode)
 - Install Razorpay SDK (`razorpay`).

@@ -1,5 +1,11 @@
-import { PrismaNeonHttp } from "@prisma/adapter-neon";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
+import { neonConfig } from "@neondatabase/serverless";
+
+// Ensure Neon serverless client uses native WebSockets in Node.js / edge environments
+if (typeof globalThis.WebSocket !== "undefined") {
+  neonConfig.webSocketConstructor = globalThis.WebSocket;
+}
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -9,7 +15,8 @@ if (!databaseUrl) {
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-const adapter = new PrismaNeonHttp(databaseUrl, {});
+// PrismaNeon enables interactive transactions ($transaction) with zero native C++ binaries
+const adapter = new PrismaNeon({ connectionString: databaseUrl });
 
 export const prisma =
   globalForPrisma.prisma ??
