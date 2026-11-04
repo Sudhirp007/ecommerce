@@ -4,6 +4,7 @@ dotenv.config();
 
 import { PrismaNeonHttp } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -12,6 +13,11 @@ if (!databaseUrl) {
 
 const adapter = new PrismaNeonHttp(databaseUrl, {});
 const prisma = new PrismaClient({ adapter });
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+}
 
 async function seed() {
   console.log("🌱 Starting MorningVeg Apparel Database Seed (Sequential HTTP mode)...");
@@ -33,11 +39,13 @@ async function seed() {
 
   // 2. Seed Users & Addresses (Sequential without nested transactions)
   console.log("Creating default users and addresses...");
+  const defaultPasswordHash = await hashPassword("Password123!");
+
   const admin = await prisma.user.create({
     data: {
       email: "admin@morningveg.com",
       name: "Store Administrator",
-      passwordHash: "$2b$10$EpRnTzVlqHNP0.fUbXUw3.qQGZtZ15pPn0M8f56x0FfC9lq3CqGfK",
+      passwordHash: defaultPasswordHash,
       role: "ADMIN",
       phone: "+91 98765 43210",
     },
@@ -60,9 +68,9 @@ async function seed() {
 
   const customer = await prisma.user.create({
     data: {
-      email: "rahul.sharma@example.com",
+      email: "customer@morningveg.com",
       name: "Rahul Sharma",
-      passwordHash: "$2b$10$EpRnTzVlqHNP0.fUbXUw3.qQGZtZ15pPn0M8f56x0FfC9lq3CqGfK",
+      passwordHash: defaultPasswordHash,
       role: "CUSTOMER",
       phone: "+91 91234 56789",
     },

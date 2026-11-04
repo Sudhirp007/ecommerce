@@ -14,7 +14,7 @@
 | Domain | https://morningveg.com/ |
 | GitHub repository | https://github.com/Sudhirp007/ecommerce.git |
 | Local project root | `C:\Users\DELL\Downloads\ecommerce` |
-| Current phase | **M3 — Storefront & Catalog Browsing: COMPLETE & VERIFIED** |
+| Current phase | **M4 — Customer Accounts & Authentication: COMPLETE & VERIFIED** |
 | Primary goal | PoC + controlled pilot, then migrate to managed production hosting |
 
 ---
@@ -47,7 +47,18 @@
   - Keyword search page `src/app/search/page.tsx` querying live products and variants matching search queries.
   - `npm run build` executed successfully (7.7s compilation, zero TypeScript errors).
   - Production server (`next start`) executed and all endpoints verified live (`/api/health`, `/category/t-shirts`, `/category/t-shirts?size=M&sort=price-low`, `/product/organic-heavyweight-classic-crew-tee`, `/search?q=linen`, `/`).
-- **Next milestone: M4 — Customer Accounts & Authentication** (Credentials auth, session management, user profile, address book, role-based guardrails).
+- **M4 (Customer Accounts & Authentication): COMPLETE / VERIFIED:**
+  - Pure JavaScript `bcryptjs` and `jose` installed (zero native C++ compilation dependencies, 100% portable across Windows, Linux, and Android Termux Bionic libc).
+  - Stateless JWT session cookies (`auth-token`, HTTP-only, SameSite=Lax, 7-day expiration) implemented in `src/lib/auth.ts`.
+  - Customer registration API (`POST /api/auth/register`) with strict Zod validation, unique email enforcement, password hashing, and auto-provisioned user cart.
+  - Customer login API (`POST /api/auth/login`) with bcrypt verification, JWT signing, and secure cookie creation.
+  - Session verification API (`GET /api/auth/me`) returning profile, role, order count, and address count.
+  - Address book API (`/api/account/addresses` and `/api/account/addresses/[id]`) with default shipping/billing toggling.
+  - Route guard middleware (`src/middleware.ts`) securing `/account/*` and `/admin/*`, redirecting unauthenticated requests to `/login?redirect=...`.
+  - Frontend auth UI: `LoginPage` (with React `Suspense`), `RegisterPage`, customer dashboard `AccountPage`, and address manager `AddressesPage`.
+  - Global `AuthContext.tsx` synchronized with `Header.tsx` displaying user badge, profile link, and sign-out action.
+  - Integration test suite `scripts/test-auth-api.js` verified 7/7 test cases end-to-end against live production server and Neon PostgreSQL.
+- **Next milestone: M5 — Cart & Checkout Architecture** (Server-side price recalculation, cart persistence in Neon DB for logged-in users, out-of-stock validation, checkout form).
 
 ---
 
@@ -270,8 +281,8 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 | M1 | Architecture + project foundation (scaffold, git, docs, env, Neon DB) | ✅ Complete |
 | M2 | Database design (Prisma schema, 48 variants, seed script) | ✅ Complete |
 | M3 | Storefront (home, catalog, product pages, search/filter/sort) | ✅ Complete |
-| M4 | Customer accounts (register/login/session/profile/addresses) | 🔲 Next |
-| M5 | Cart & checkout (server-side price/stock validation) | 🔲 Planned |
+| M4 | Customer accounts (register/login/session/profile/addresses) | ✅ Complete |
+| M5 | Cart & checkout (server-side price/stock validation) | 🔲 Next |
 | M6 | Payments (Razorpay test mode, webhooks, refunds) | 🔲 Planned |
 | M7 | Admin dashboard (products, categories, variants, inventory, orders, customers) | 🔲 Planned |
 | M8 | Order lifecycle (status transitions, tracking, cancellation) | 🔲 Planned |
@@ -357,12 +368,24 @@ Principles: order items preserve price-at-time-of-purchase; inventory changes an
 8. ✅ Verified `npm run build` compilation (Turbopack, TypeScript checks, zero errors).
 9. ✅ Verified production runtime via `curl` against all M3 routes with HTTP 200 responses.
 
-### Next Actions: M4 — Customer Accounts & Authentication (Ready to Begin)
-- Configure lightweight authentication (Credentials / Password hashing with bcrypt).
-- User registration and login pages (`/login`, `/register`).
-- Secure JWT / Session management.
-- User profile and address book management (`/account`, `/account/addresses`).
-- Server-side route protection & role guard middleware (`CUSTOMER` vs `ADMIN`).
+### Completed in M4 (Verified):
+1. ✅ Installed pure JS `bcryptjs` and `jose` (zero native C++ dependencies, 100% Android/Termux portable).
+2. ✅ Implemented `src/lib/auth.ts`: `hashPassword`, `verifyPassword`, `signToken`, `verifyToken`, `getSessionUser`.
+3. ✅ Implemented auth API endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`.
+4. ✅ Implemented address management APIs: `/api/account/addresses`, `/api/account/addresses/[id]`.
+5. ✅ Created `src/middleware.ts` for route protection on `/account/*` and `/admin/*`.
+6. ✅ Built client-side `AuthContext.tsx` providing reactive session state and operations across the app.
+7. ✅ Created responsive auth pages: `/login` (with React `Suspense`), `/register`, `/account`, and `/account/addresses`.
+8. ✅ Updated `Header.tsx` to display live user avatar, name, and account dropdown link.
+9. ✅ Re-seeded test users (`customer@morningveg.com` / `Password123!`) with verified bcrypt hashes.
+10. ✅ Created and executed automated test script `scripts/test-auth-api.js` verifying all 7 test cases end-to-end against live server.
+
+### Next Actions: M5 — Cart & Checkout Architecture (Ready to Begin)
+- Server-side cart synchronization with Neon PostgreSQL (`Cart` and `CartItem` models).
+- Strict server-side price recalculation (Zero Client Trust principle).
+- Stock availability and variant lock checks before checkout.
+- Multi-step checkout UI (Delivery Address Selection, Order Summary, Payment Method Selection).
+- Address pre-filling from saved customer addresses.
 
 ---
 

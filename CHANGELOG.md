@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Successfully synced schema to Neon PostgreSQL via `npx prisma db push`.
   - Developed and executed realistic seed script (`prisma/seed.ts`): seeded 5 apparel categories, 10 products, 48 size/color variants with individual inventory logs, sample customer, and sample order.
   - Built typed catalog query library `src/lib/catalog.ts` and REST endpoint `/api/catalog/products`.
+- **Milestone 4: Customer Accounts & Authentication Completed**
+  - Integrated pure JS `bcryptjs` and `jose` for zero-native-addon portability on Windows, Linux, and Android Termux Bionic libc.
+  - Implemented stateless session architecture in `src/lib/auth.ts` with HTTP-only 7-day `auth-token` cookies.
+  - Developed customer registration endpoint `/api/auth/register` with Zod validation, bcrypt password hashing, and auto-provisioned user cart.
+  - Developed login endpoint `/api/auth/login` and session profile endpoint `/api/auth/me`.
+  - Implemented delivery address management API: `/api/account/addresses` and `/api/account/addresses/[id]` with default shipping/billing management.
+  - Built edge-compatible route guard `src/middleware.ts` safeguarding `/account/*` and `/admin/*`.
+  - Built customer UI pages: `/login` (with React Suspense), `/register`, customer overview `/account`, and address manager `/account/addresses`.
+  - Integrated `AuthContext.tsx` with responsive `Header.tsx` displaying logged-in member avatar and links.
+  - Developed and verified automated test suite `scripts/test-auth-api.js` testing 7 end-to-end authentication scenarios.
 - **Milestone 3: Storefront & Catalog Browsing Completed**
   - Installed `lucide-react` for modern e-commerce iconography.
   - Built `CartContext.tsx` providing client-side shopping bag state, localStorage persistence, and ₹999 free delivery threshold meter.

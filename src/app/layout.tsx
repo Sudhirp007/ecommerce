@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { Header } from "@/components/Header";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -17,17 +18,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900">
-        <CartProvider>
-          {/* Global Header with Live Cart Badge & Search */}
-          <Header />
+        <AuthProvider>
+          <CartProvider>
+            {/* Global Header with Live Cart Badge & Search */}
+            <Header />
 
-          {/* Global Slide-Over Cart Drawer */}
-          <CartDrawer />
+            {/* Global Slide-Over Cart Drawer */}
+            <CartDrawer />
 
-          {/* Main Page Body */}
-          <main className="flex-1">
-            {children}
-          </main>
+            {/* Main Page Body */}
+            <main className="flex-1">
+              {children}
+            </main>
 
           {/* Global Storefront Footer */}
           <footer className="border-t border-slate-200 bg-white py-12 text-xs text-slate-500">
@@ -81,7 +83,8 @@ export default function RootLayout({
             </div>
           </footer>
         </CartProvider>
-      </body>
-    </html>
+      </AuthProvider>
+    </body>
+  </html>
   );
 }
