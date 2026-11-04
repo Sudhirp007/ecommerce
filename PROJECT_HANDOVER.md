@@ -25,6 +25,7 @@
 - **M1 (Architecture & Foundation): COMPLETE / VERIFIED:**
   - Next.js App Router, TypeScript, Tailwind CSS scaffolded.
   - Neon Lakebase PostgreSQL integration completed and verified live with server-side queries.
+  - Approved ORM restored: Prisma 7.10 + @prisma/adapter-neon (PrismaNeonHttp) configured, generated, and verified with live Neon queries and table sync.
   - Production build (`npm run build`) passed cleanly with zero errors.
   - Production server started and tested end-to-end (`/api/health` and `/` storefront verified).
   - Android Device (Realme Narzo / Termux) successfully bridged via SSH (`u0_a317@192.168.1.14:8022`) with passwordless key authentication.
@@ -76,16 +77,158 @@
 
 | Layer | Choice | Status |
 |---|---|---|
-| Framework | Next.js 15 (App Router) + TypeScript | Candidate |
-| Styling | Tailwind CSS | Candidate |
-| ORM | Prisma | Candidate |
-| Database | PostgreSQL (managed, e.g. Neon) | Candidate — prefer managed over Android-local |
-| Auth | Auth.js v5 (Credentials, JWT sessions), bcrypt/argon2 hashing | Candidate |
-| Payments | Razorpay (TEST mode first), UPI Intent/QR, signature+webhook verification | Candidate |
+| Framework | Next.js 16 (App Router) + TypeScript | ✅ Active & Verified |
+| Styling | Tailwind CSS v4 | ✅ Active & Verified |
+| ORM | Prisma 7.10 + @prisma/adapter-neon (PrismaNeonHttp) | ✅ Approved & Verified |
+| Database | Neon Serverless PostgreSQL 18.6 (Lakebase) | ✅ Active & Verified |
+| Auth | Auth.js v5 (Credentials, JWT sessions), bcrypt/argon2 hashing | Candidate (M4) |
+| Payments | Razorpay (TEST mode first), UPI Intent/QR, signature+webhook verification | Candidate (M6) |
 | Images | Local `public/` for dev; object storage later | Candidate |
-| Admin | Route group `/admin` with server-side role guards | Candidate |
-| Testing | Vitest (unit/integration) + Playwright (E2E) | Candidate |
-| CI/CD | Git + GitHub | Candidate |
+| Admin | Route group `/admin` with server-side role guards | Candidate (M7) |
+| Testing | Vitest (unit/integration) + Playwright (E2E) | Candidate (M9) |
+| CI/CD | Git + GitHub | ✅ Active (SSH) |
+
+---
+
+## 5.1 Prisma + Neon Driver Adapter Architecture (Canonical Pattern)
+
+To resolve both **Android Bionic libc binary incompatibility** (Prisma has no prebuilt C++ engine for native Android ARM64) and **Neon cold-start latency**, the project adopts Prisma 7 with the Neon HTTP driver adapter.
+
+### Architecture Mechanics
+1. **Migration & CLI Phase (Windows Workstation):**
+   - Schema defined in `prisma/schema.prisma`.
+   - Migration connection managed via `prisma.config.ts`.
+   - Run `npx prisma migrate dev` or `npx prisma db push` on Windows against the live Neon database.
+   - Runs native C++ engines during build/migration time only on Windows.
+2. **Runtime Execution Phase (App Router / Android Phone):**
+   - `PrismaClient` executes queries through `PrismaNeonHttp` over HTTPS.
+   - **Zero Rust/C++ binary engine needed at runtime.** The application runs seamlessly inside Termux on Android without missing binary engine crashes.
+
+### Full Implementation Example
+
+#### 1. `prisma/schema.prisma`
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SystemStatus {
+  id        String   @id @default(cuid())
+  service   String
+  status    String
+  timestamp DateTime @default(now())
+
+  @@map("system_status")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String?
+  basePrice   Decimal          @db.Decimal(10, 2)
+  categoryId  String
+  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  variants    ProductVariant[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku       String   @unique
+  size      String
+  color     String
+  price     Decimal  @db.Decimal(10, 2)
+  stock     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_variants")
+}
+```
+
+#### 2. `prisma.config.ts` (Prisma 7 Configuration)
+```typescript
+import { defineConfig, env } from "@prisma/config";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
+dotenv.config();
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  datasource: {
+    url: env("DATABASE_URL"),
+  },
+});
+```
+
+#### 3. Client Instantiation (`src/lib/db.ts`)
+```typescript
+import { PrismaNeonHttp } from "@prisma/adapter-neon";
+import { PrismaClient } from "@prisma/client";
+
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL environment variable is missing.");
+}
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+// PrismaNeonHttp passes queries over Neon's lightweight HTTP pipeline
+const adapter = new PrismaNeonHttp(databaseUrl, {});
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+```
+
+#### 4. Type-Safe Query Example
+```typescript
+import { prisma } from "@/lib/db";
+
+// Fetch category with variants and calculated stock
+export async function getProductWithVariants(slug: string) {
+  return await prisma.product.findUnique({
+    where: { slug },
+    include: {
+      category: true,
+      variants: {
+        where: { stock: { gt: 0 } },
+        orderBy: { size: "asc" },
+      },
+    },
+  });
+}
+```
 
 ---
 

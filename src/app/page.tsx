@@ -5,13 +5,17 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   let dbStatus = "Connecting...";
   let dbHealthy = false;
-  let serverTime = "";
+  let recordCount = 0;
+  let lastTimestamp = "";
 
   try {
     const health = await checkDatabaseHealth();
     dbHealthy = health.status === "healthy";
-    dbStatus = `Connected to ${health.database} (${health.postgresVersion.split(" ")[0]} ${health.postgresVersion.split(" ")[1]})`;
-    serverTime = health.serverTime;
+    recordCount = health.recordCount;
+    dbStatus = `Prisma ORM connected to Neon PostgreSQL (${recordCount} health record${recordCount === 1 ? "" : "s"} logged)`;
+    if (health.lastRecord) {
+      lastTimestamp = new Date(health.lastRecord.timestamp).toLocaleString();
+    }
   } catch (err) {
     dbHealthy = false;
     dbStatus = err instanceof Error ? err.message : "Failed to connect to Neon database";
@@ -58,7 +62,7 @@ export default async function HomePage() {
       <section className="bg-gradient-to-b from-emerald-50/60 to-transparent pt-16 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 mb-6">
           <span className={`w-2 h-2 rounded-full ${dbHealthy ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
-          Neon PostgreSQL Service: {dbHealthy ? "Live & Synced" : "Pending Sync"}
+          Prisma + Neon Adapter: {dbHealthy ? "Active & Synced" : "Pending Sync"}
         </div>
         <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight max-w-4xl mx-auto leading-tight">
           Thoughtfully Designed Apparel for Everyday Living.
@@ -86,13 +90,16 @@ export default async function HomePage() {
       <section className="max-w-5xl mx-auto px-4">
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-left">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Database Backend</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">ORM &amp; Database Backend</p>
             <p className="text-sm font-semibold text-slate-800">{dbStatus}</p>
-            {serverTime && <p className="text-xs text-slate-500">Live Timestamp: {new Date(serverTime).toLocaleString()}</p>}
+            {lastTimestamp && <p className="text-xs text-slate-500">Last Synced Record: {lastTimestamp}</p>}
           </div>
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ORM: Prisma 7.10
+            </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-              Provider: Neon Lakebase
+              Adapter: @prisma/adapter-neon
             </span>
           </div>
         </div>

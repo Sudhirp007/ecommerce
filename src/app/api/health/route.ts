@@ -10,6 +10,7 @@ export async function GET() {
       service: "MorningVeg Apparel API",
       status: "operational",
       timestamp: new Date().toISOString(),
+      orm: "Prisma 7.10.1 (@prisma/adapter-neon)",
       database: dbHealth,
     });
   } catch (error) {
